@@ -1,18 +1,22 @@
 package com.nnamanistephen.jetnoteapp.screen
 
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -26,7 +30,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.focusModifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -37,14 +40,15 @@ import com.nnamanistephen.jetnoteapp.components.NoteButton
 import com.nnamanistephen.jetnoteapp.components.NoteInputText
 import com.nnamanistephen.jetnoteapp.data.NotesDataSource
 import com.nnamanistephen.jetnoteapp.model.Note
-import java.time.format.DateTimeFormatter
+import com.nnamanistephen.jetnoteapp.util.formatDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NoteScreen(
     notes: List<Note>,
     onAddNote: (Note) -> Unit,
-    onRemoveNote: (Note)-> Unit
+    onRemoveNote: (Note)-> Unit,
+    onUpdateNote: (Note) -> Unit
 ){
 
     var title by remember {
@@ -106,7 +110,9 @@ fun NoteScreen(
 
         LazyColumn {
             items(notes){ note ->
-                NoteRow(note = note, onNoteClicked = {
+                NoteRow(note = note, onUpdateNote = {
+                    onUpdateNote(note)
+                }, onRemoveNote = {
                     onRemoveNote(note)
                 })
 
@@ -119,8 +125,17 @@ fun NoteScreen(
 fun NoteRow(
     modifier: Modifier = Modifier,
     note: Note,
-    onNoteClicked: (Note) -> Unit
+    onUpdateNote: (Note) -> Unit,
+    onRemoveNote: (Note) -> Unit
 ){
+    val title by remember {
+        mutableStateOf(note.title)
+    }
+
+    val description by remember {
+        mutableStateOf(note.description)
+    }
+
     Surface (
         modifier
             .padding(4.dp)
@@ -131,13 +146,29 @@ fun NoteRow(
     ){
         Column (
             modifier
-                .clickable { onNoteClicked(note) }
+                .clickable {
+                    val updateNote = note.copy(
+                        title = title,
+                        description = description,
+                    )
+                    onUpdateNote(updateNote)
+                }
                 .padding(horizontal = 14.dp, vertical = 6.dp),
             horizontalAlignment = Alignment.Start
         ){
-            Text(text = note.title, style = MaterialTheme.typography.titleMedium)
-            Text(text = note.description, style = MaterialTheme.typography.titleSmall)
-            Text(text = note.entryDate.format(DateTimeFormatter.ofPattern("EEE, d MMM")), style = MaterialTheme.typography.bodyMedium)
+            Row {
+                Column {
+                    Text(text = note.title, style = MaterialTheme.typography.titleMedium)
+                    Text(text = note.description, style = MaterialTheme.typography.titleSmall)
+                    Text(text = formatDate(note.entryDate.time),
+                        style = MaterialTheme.typography.bodyMedium)
+                }
+                IconButton(onClick = { onRemoveNote(note) },
+                    modifier = Modifier.padding(start = 150.dp)) {
+                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete icon")
+                }
+            }
+
 
         }
 
@@ -148,5 +179,5 @@ fun NoteRow(
 @Preview(showBackground = true)
 @Composable
 fun NoteScreenPreview(){
-    NoteScreen(notes = NotesDataSource().loadNotes(), onAddNote = {}, onRemoveNote = {})
+    NoteScreen(notes = NotesDataSource().loadNotes(), onAddNote = {}, onUpdateNote = {}, onRemoveNote = {})
 }

@@ -28,7 +28,7 @@ fun NoteInputText(
 
     TextField(value = text,
         onValueChange = onTextChange,
-        colors = TextFieldDefaults.textFieldColors(
+        colors = TextFieldDefaults.colors(
             Color.Black
         ),
         maxLines = maxLine,
