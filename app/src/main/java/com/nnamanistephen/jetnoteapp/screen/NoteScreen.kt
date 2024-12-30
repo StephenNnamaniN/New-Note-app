@@ -58,6 +58,9 @@ fun NoteScreen(
     var description by remember {
         mutableStateOf("")
     }
+    var currentNote by remember {
+        mutableStateOf<Note?>(null)
+    }
     val context = LocalContext.current
 
     Column (modifier = Modifier.padding(6.dp)){
@@ -93,16 +96,30 @@ fun NoteScreen(
                 })
 
             NoteButton(
-                text = "Save",
+                text = if (currentNote == null) "Save" else "Update",
                 onClick = {
                     if (title.isNotEmpty() && description.isNotEmpty()){
-                        onAddNote(Note(
-                            title = title,
-                            description = description
-                        ))
+                        if (currentNote != null){
+                            //Update existing note
+                            val updateNote = currentNote!!.copy(
+                                title = title,
+                                description = description
+                            )
+                            onUpdateNote(updateNote)
+                            Toast.makeText(context, "Note Updated", Toast.LENGTH_SHORT).show()
+                        }else {
+                            onAddNote(Note(
+                                title = title,
+                                description = description
+                            ))
+                            title = ""
+                            description = ""
+                            Toast.makeText(context, "Note Added", Toast.LENGTH_SHORT).show()
+                        }
+                        // Reset fields after action
+                        currentNote = null
                         title = ""
                         description = ""
-                        Toast.makeText(context, "Note Added", Toast.LENGTH_SHORT).show()
                     }
                 })
         }
@@ -110,8 +127,10 @@ fun NoteScreen(
 
         LazyColumn {
             items(notes){ note ->
-                NoteRow(note = note, onUpdateNote = {
-                    onUpdateNote(note)
+                NoteRow(note = note, onUpdateNote = { selectedNote ->
+                    currentNote = selectedNote
+                    title = selectedNote.title
+                    description = selectedNote.description
                 }, onRemoveNote = {
                     onRemoveNote(note)
                 })
@@ -128,14 +147,6 @@ fun NoteRow(
     onUpdateNote: (Note) -> Unit,
     onRemoveNote: (Note) -> Unit
 ){
-    val title by remember {
-        mutableStateOf(note.title)
-    }
-
-    val description by remember {
-        mutableStateOf(note.description)
-    }
-
     Surface (
         modifier
             .padding(4.dp)
@@ -147,11 +158,7 @@ fun NoteRow(
         Column (
             modifier
                 .clickable {
-                    val updateNote = note.copy(
-                        title = title,
-                        description = description,
-                    )
-                    onUpdateNote(updateNote)
+                    onUpdateNote(note)
                 }
                 .padding(horizontal = 14.dp, vertical = 6.dp),
             horizontalAlignment = Alignment.Start
